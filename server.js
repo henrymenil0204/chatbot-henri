@@ -87,7 +87,11 @@ async function getHistory(sessionId, limit = 20) {
       .get();
     return snapshot.docs.map((doc) => {
       const data = doc.data();
-      return { role: data.role, content: data.content };
+      return {
+        role: data.role,
+        content: data.content,
+        timestamp: data.timestamp ? data.timestamp.toMillis() : null,
+      };
     });
   } catch (err) {
     console.error('Error fetching history from Firestore:', err.message);
@@ -138,6 +142,22 @@ app.get('/api/history/:sessionId', async (req, res) => {
   res.json({ history });
 });
 
+// Delete a session and all of its messages
+app.delete('/api/sessions/:sessionId', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Firestore is not configured.' });
+  }
+  try {
+    const { sessionId } = req.params;
+    const chatRef = db.collection('chats').doc(sessionId);
+    await db.recursiveDelete(chatRef);
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('Error deleting session:', err.message);
+    res.status(500).json({ error: 'Failed to delete session.' });
+  }
+});
+
 // Send a message, get an AI reply
 app.post('/api/chat', async (req, res) => {
   try {
@@ -148,15 +168,16 @@ app.post('/api/chat', async (req, res) => {
     }
     const sid = sessionId || 'default-session';
 
-    // Pull recent history for context
+    // Pull recent history for context (strip timestamp — the model doesn't need it)
     const priorHistory = await getHistory(sid, 20);
+    const contextMessages = priorHistory.map((m) => ({ role: m.role, content: m.content }));
 
     const messages = [
       {
         role: 'system',
         content: 'You are a helpful, friendly AI assistant. Keep answers concise and clear.',
       },
-      ...priorHistory,
+      ...contextMessages,
       { role: 'user', content: message },
     ];
 
