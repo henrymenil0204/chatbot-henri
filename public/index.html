@@ -984,9 +984,29 @@ textarea#input::placeholder { color: var(--text-dim); }
 
       <p class="auth-message" id="authMessage" aria-live="polite"></p>
       <p class="auth-note" id="authNote">
-        This login screen is connected to the page UI. For production authentication,
-        connect the form to your Firebase/Auth or backend login endpoint.
+        Sign in with your email and password, or use Google / guest access below.
       </p>
+    </div>
+  </section>
+
+  <section class="auth-screen hidden" id="verifyScreen" aria-label="Verify your email">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="logo.svg" alt="Henri Chatbot logo" class="auth-logo" />
+        <h1 class="auth-title">Verify your email</h1>
+        <p class="auth-subtitle" id="verifyEmailLabel">We sent a confirmation link to your email address.</p>
+      </div>
+
+      <p class="auth-note">
+        Click the link in that email, then come back and press "I've verified — continue."
+        Check your spam folder if you don't see it within a minute or two.
+      </p>
+
+      <button type="button" class="auth-primary" id="verifyCheckBtn">I've verified — continue</button>
+      <button type="button" class="auth-google" id="verifyResendBtn">Resend verification email</button>
+      <button type="button" class="auth-guest" id="verifyLogoutBtn">Use a different account</button>
+
+      <p class="auth-message" id="verifyMessage" aria-live="polite"></p>
     </div>
   </section>
 
@@ -1060,6 +1080,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
+  sendEmailVerification,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
@@ -1168,17 +1189,90 @@ function describeAuthError(err) {
   }
 }
 
+const verifyScreen = document.getElementById('verifyScreen');
+const verifyEmailLabel = document.getElementById('verifyEmailLabel');
+const verifyCheckBtn = document.getElementById('verifyCheckBtn');
+const verifyResendBtn = document.getElementById('verifyResendBtn');
+const verifyLogoutBtn = document.getElementById('verifyLogoutBtn');
+const verifyMessage = document.getElementById('verifyMessage');
+
+function setVerifyMessage(message, isError = true) {
+  verifyMessage.textContent = message;
+  verifyMessage.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+}
+
+// Only email/password accounts need this — Google already confirms real
+// addresses, and anonymous guests have no email to verify.
+function needsEmailVerification(user) {
+  if (!user) return false;
+  const isPasswordAccount = user.providerData.some((p) => p.providerId === 'password');
+  return isPasswordAccount && !user.emailVerified;
+}
+
 function showChatApp() {
   authScreen.classList.add('hidden');
+  verifyScreen.classList.add('hidden');
   appShell.classList.remove('locked');
 }
 
 function showLogin() {
   authScreen.classList.remove('hidden');
+  verifyScreen.classList.add('hidden');
   appShell.classList.add('locked');
   authPassword.value = '';
   setAuthBusy(false);
 }
+
+function showVerifyScreen(user) {
+  authScreen.classList.add('hidden');
+  verifyScreen.classList.remove('hidden');
+  appShell.classList.add('locked');
+  verifyEmailLabel.textContent = user.email
+    ? `We sent a confirmation link to ${user.email}.`
+    : 'We sent a confirmation link to your email address.';
+  setVerifyMessage('');
+}
+
+verifyCheckBtn.addEventListener('click', async () => {
+  if (!currentUser) return;
+  verifyCheckBtn.disabled = true;
+  try {
+    await currentUser.reload();
+    if (needsEmailVerification(currentUser)) {
+      setVerifyMessage('Still not verified — click the link in the email first.');
+    } else {
+      showChatApp();
+      startNewSession();
+      loadSessions();
+    }
+  } catch (err) {
+    setVerifyMessage(describeAuthError(err));
+  } finally {
+    verifyCheckBtn.disabled = false;
+  }
+});
+
+verifyResendBtn.addEventListener('click', async () => {
+  if (!currentUser) return;
+  verifyResendBtn.disabled = true;
+  try {
+    await sendEmailVerification(currentUser);
+    setVerifyMessage('Verification email resent.', false);
+  } catch (err) {
+    setVerifyMessage(describeAuthError(err));
+  } finally {
+    verifyResendBtn.disabled = false;
+  }
+});
+
+verifyLogoutBtn.addEventListener('click', async () => {
+  if (!auth) return;
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error('Sign out failed:', err);
+  }
+});
 
 signInTab.addEventListener('click', () => setAuthMode('signin'));
 registerTab.addEventListener('click', () => setAuthMode('register'));
@@ -1263,11 +1357,15 @@ authForm.addEventListener('submit', async (e) => {
   try {
     setAuthBusy(true);
     if (authMode === 'register') {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // New email/password accounts aren't trusted until the address is
+      // confirmed to actually exist — send the verification link now.
+      await sendEmailVerification(cred.user);
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }
-    // onAuthStateChanged below handles showing the chat app.
+    // onAuthStateChanged below handles showing the chat app (or the
+    // "verify your email" screen for unverified email/password accounts).
   } catch (err) {
     setAuthMessage(describeAuthError(err));
     setAuthBusy(false);
@@ -1286,7 +1384,9 @@ logoutBtn.addEventListener('click', async () => {
 if (auth) {
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
-    if (user) {
+    if (user && needsEmailVerification(user)) {
+      showVerifyScreen(user);
+    } else if (user) {
       showChatApp();
       startNewSession();
       loadSessions();

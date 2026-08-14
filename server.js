@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const Groq = require('groq-sdk');
 const admin = require('firebase-admin');
+const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,69 @@ try {
   }
 } catch (err) {
   console.error('Failed to initialize Firebase Admin:', err.message);
+}
+
+// ---------- Unverified account cleanup ----------
+// Anyone can sign up with an email/password combo using a made-up address —
+// Firebase creates the account the instant they submit the form, before the
+// verification link is ever clicked. This job sweeps those out periodically
+// so fake/unclaimed accounts don't pile up. Google and anonymous-guest
+// accounts are never touched: Google already confirms real addresses, and
+// guests have no email to verify in the first place.
+const UNVERIFIED_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function cleanupUnverifiedAccounts() {
+  if (!admin.apps.length) return;
+
+  let nextPageToken;
+  let checked = 0;
+  let deleted = 0;
+
+  try {
+    do {
+      const result = await admin.auth().listUsers(1000, nextPageToken);
+      nextPageToken = result.pageToken;
+
+      const staleUids = [];
+      for (const user of result.users) {
+        checked++;
+        const isPasswordAccount = user.providerData.some((p) => p.providerId === 'password');
+        if (!isPasswordAccount || user.emailVerified) continue;
+
+        const createdMs = new Date(user.metadata.creationTime).getTime();
+        if (Date.now() - createdMs > UNVERIFIED_MAX_AGE_MS) {
+          staleUids.push(user.uid);
+        }
+      }
+
+      if (staleUids.length > 0) {
+        const deleteResult = await admin.auth().deleteUsers(staleUids);
+        deleted += deleteResult.successCount;
+
+        // Best-effort cleanup of any chat data those accounts wrote before
+        // being removed. Not critical if this part fails.
+        if (db) {
+          await Promise.all(
+            staleUids.map((uid) =>
+              db.recursiveDelete(db.collection('users').doc(uid)).catch(() => {})
+            )
+          );
+        }
+      }
+    } while (nextPageToken);
+
+    if (deleted > 0) {
+      console.log(`Unverified-account cleanup: checked ${checked}, deleted ${deleted}.`);
+    }
+  } catch (err) {
+    console.error('Unverified-account cleanup failed:', err.message);
+  }
+}
+
+// Run once shortly after startup, then every hour.
+if (admin.apps.length) {
+  setTimeout(cleanupUnverifiedAccounts, 30 * 1000);
+  cron.schedule('0 * * * *', cleanupUnverifiedAccounts);
 }
 
 // ---------- Auth middleware ----------
