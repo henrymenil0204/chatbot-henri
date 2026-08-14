@@ -808,6 +808,12 @@ textarea#input::placeholder { color: var(--text-dim); }
   transform: translateY(0);
 }
 
+.auth-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
@@ -845,6 +851,12 @@ textarea#input::placeholder { color: var(--text-dim); }
 .auth-guest:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.auth-google:disabled,
+.auth-guest:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .auth-google-icon {
@@ -1037,7 +1049,45 @@ textarea#input::placeholder { color: var(--text-dim); }
     </div>
   </div>
 
-  <script>
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
+  sendPasswordResetEmail,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// ---------- Firebase config ----------
+// Paste your web app's config from the Firebase console
+// (Project settings -> General -> Your apps -> SDK setup and configuration).
+// This is the public client config, safe to ship in front-end code — it is
+// not a secret. Access control happens via Firebase Auth rules + the
+// server verifying ID tokens, not by hiding these values.
+const firebaseConfig = {
+  apiKey: "AIzaSyDMy8pkEjq05YB7i0mDMW6Wv1kzwsjCbiY",
+  authDomain: "capstone-project-c023e.firebaseapp.com",
+  projectId: "capstone-project-c023e",
+  storageBucket: "capstone-project-c023e.firebasestorage.app",
+  messagingSenderId: "366362680172",
+  appId: "1:366362680172:web:ca257ea26213f898dbf149",
+};
+
+const isConfigured = !Object.values(firebaseConfig).some((v) => String(v).startsWith('YOUR_'));
+
+let firebaseApp = null;
+let auth = null;
+if (isConfigured) {
+  firebaseApp = initializeApp(firebaseConfig);
+  auth = getAuth(firebaseApp);
+} else {
+  console.warn('Firebase config is still using placeholder values — auth is disabled until you fill in firebaseConfig.');
+}
 
 // ---------- Login UI ----------
 const authScreen = document.getElementById('authScreen');
@@ -1054,12 +1104,27 @@ const showPasswordBtn = document.getElementById('showPasswordBtn');
 const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
 const googleBtn = document.getElementById('googleBtn');
 const guestBtn = document.getElementById('guestBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 
 let authMode = 'signin';
+let currentUser = null;
 
 function setAuthMessage(message, isError = true) {
   authMessage.textContent = message;
   authMessage.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+}
+
+function setAuthBusy(busy) {
+  authSubmit.disabled = busy;
+  googleBtn.disabled = busy;
+  guestBtn.disabled = busy;
+  if (busy) {
+    authSubmit.dataset.label = authSubmit.dataset.label || authSubmit.textContent;
+    authSubmit.textContent = 'Please wait…';
+  } else if (authSubmit.dataset.label) {
+    authSubmit.textContent = authSubmit.dataset.label;
+    delete authSubmit.dataset.label;
+  }
 }
 
 function setAuthMode(mode) {
@@ -1069,23 +1134,50 @@ function setAuthMode(mode) {
   signInTab.classList.toggle('active', !registering);
   registerTab.classList.toggle('active', registering);
   authSubmit.textContent = registering ? 'Create account' : 'Sign in';
+  delete authSubmit.dataset.label;
   authPassword.autocomplete = registering ? 'new-password' : 'current-password';
   forgotPasswordBtn.style.display = registering ? 'none' : 'block';
-  authNote.innerHTML = registering
-    ? 'Create an account to continue. For production, connect this form to your real authentication service.'
-    : 'This login screen is connected to the page UI. For production authentication, connect the form to your Firebase/Auth or backend login endpoint.';
+  authNote.textContent = registering
+    ? 'Create an account with an email and password, or use Google / guest access below.'
+    : 'Sign in with your email and password, or use Google / guest access below.';
   setAuthMessage('');
+}
+
+// Friendly copy for the Firebase Auth error codes we're most likely to hit.
+function describeAuthError(err) {
+  const code = err && err.code;
+  switch (code) {
+    case 'auth/invalid-email':
+      return 'That email address doesn\u2019t look right.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Email or password is incorrect.';
+    case 'auth/email-already-in-use':
+      return 'An account with that email already exists — try signing in instead.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a moment and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in was closed before finishing.';
+    case 'auth/network-request-failed':
+      return 'Network error — check your connection and try again.';
+    default:
+      return (err && err.message) || 'Something went wrong. Please try again.';
+  }
 }
 
 function showChatApp() {
   authScreen.classList.add('hidden');
   appShell.classList.remove('locked');
-  sessionStorage.setItem('henri_logged_in', 'true');
 }
 
 function showLogin() {
   authScreen.classList.remove('hidden');
   appShell.classList.add('locked');
+  authPassword.value = '';
+  setAuthBusy(false);
 }
 
 signInTab.addEventListener('click', () => setAuthMode('signin'));
@@ -1097,27 +1189,64 @@ showPasswordBtn.addEventListener('click', () => {
   showPasswordBtn.textContent = visible ? 'SHOW' : 'HIDE';
 });
 
-forgotPasswordBtn.addEventListener('click', () => {
+forgotPasswordBtn.addEventListener('click', async () => {
+  if (!auth) {
+    setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values first.');
+    return;
+  }
   const email = authEmail.value.trim();
   if (!email) {
     setAuthMessage('Enter your email address first.');
     authEmail.focus();
     return;
   }
-  setAuthMessage('Password reset requires a connected authentication service.', true);
+  try {
+    setAuthBusy(true);
+    await sendPasswordResetEmail(auth, email);
+    setAuthMessage('Password reset email sent — check your inbox.', false);
+  } catch (err) {
+    setAuthMessage(describeAuthError(err));
+  } finally {
+    setAuthBusy(false);
+  }
 });
 
-googleBtn.addEventListener('click', () => {
-  setAuthMessage('Google sign-in requires Firebase/Auth or another OAuth provider to be connected.', true);
+googleBtn.addEventListener('click', async () => {
+  if (!auth) {
+    setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values first.');
+    return;
+  }
+  try {
+    setAuthBusy(true);
+    await signInWithPopup(auth, new GoogleAuthProvider());
+    // onAuthStateChanged below handles showing the chat app.
+  } catch (err) {
+    setAuthMessage(describeAuthError(err));
+    setAuthBusy(false);
+  }
 });
 
-guestBtn.addEventListener('click', () => {
-  sessionStorage.setItem('henri_logged_in', 'guest');
-  showChatApp();
+guestBtn.addEventListener('click', async () => {
+  if (!auth) {
+    setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values first.');
+    return;
+  }
+  try {
+    setAuthBusy(true);
+    await signInAnonymously(auth);
+  } catch (err) {
+    setAuthMessage(describeAuthError(err) + ' (Make sure Anonymous sign-in is enabled in the Firebase console.)');
+    setAuthBusy(false);
+  }
 });
 
-authForm.addEventListener('submit', (e) => {
+authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  if (!auth) {
+    setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values at the top of the script.');
+    return;
+  }
 
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -1126,32 +1255,60 @@ authForm.addEventListener('submit', (e) => {
     setAuthMessage('Please enter your email and password.');
     return;
   }
-
   if (password.length < 6) {
     setAuthMessage('Password must be at least 6 characters.');
     return;
   }
 
-  // Front-end demo gate only. Replace this section with your real auth API.
-  if (authMode === 'register') {
-    localStorage.setItem('henri_demo_email', email);
-    setAuthMessage('Account created. Opening Henri Chatbot…', false);
-  } else {
-    const savedEmail = localStorage.getItem('henri_demo_email');
-    if (savedEmail && savedEmail !== email) {
-      setAuthMessage('This demo account uses a different email. Create a new account or use that email.');
-      return;
+  try {
+    setAuthBusy(true);
+    if (authMode === 'register') {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
     }
-    setAuthMessage('Signed in. Opening Henri Chatbot…', false);
+    // onAuthStateChanged below handles showing the chat app.
+  } catch (err) {
+    setAuthMessage(describeAuthError(err));
+    setAuthBusy(false);
   }
-
-  setTimeout(showChatApp, 250);
 });
 
-if (sessionStorage.getItem('henri_logged_in')) {
-  showChatApp();
+logoutBtn.addEventListener('click', async () => {
+  if (!auth) return;
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error('Sign out failed:', err);
+  }
+});
+
+if (auth) {
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+      showChatApp();
+      startNewSession();
+      loadSessions();
+    } else {
+      showLogin();
+    }
+  });
 } else {
-  showLogin();
+  setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values at the top of the script to enable sign-in.');
+}
+
+// Attaches the signed-in user's Firebase ID token to a request so the
+// server can verify who's calling (see verifyAuth in server.js).
+async function authFetch(url, options = {}) {
+  if (!currentUser) {
+    throw new Error('You need to be signed in.');
+  }
+  const token = await currentUser.getIdToken();
+  const headers = Object.assign({}, options.headers, {
+    Authorization: `Bearer ${token}`,
+  });
+  return fetch(url, Object.assign({}, options, { headers }));
 }
 
 
@@ -1452,7 +1609,7 @@ async function sendMessage(message) {
   lastFailedMessage = null;
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await authFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, sessionId }),
@@ -1492,14 +1649,6 @@ function startNewSession() {
   closeSidebar();
 }
 
-const logoutBtn = document.getElementById('logoutBtn');
-logoutBtn.addEventListener('click', () => {
-  sessionStorage.removeItem('henri_logged_in');
-  showLogin();
-  authPassword.value = '';
-  setAuthMessage('');
-});
-
 clearBtn.addEventListener('click', startNewSession);
 newChatBtn.addEventListener('click', startNewSession);
 
@@ -1515,7 +1664,7 @@ async function openSession(id) {
   highlightActiveSession();
   closeSidebar();
   try {
-    const res = await fetch(`/api/history/${encodeURIComponent(id)}`);
+    const res = await authFetch(`/api/history/${encodeURIComponent(id)}`);
     const data = await res.json();
     renderLog(data.history || []);
   } catch (err) {
@@ -1527,7 +1676,7 @@ async function deleteSession(id, itemEl) {
   const confirmed = window.confirm('Delete this conversation? This cannot be undone.');
   if (!confirmed) return;
   try {
-    await fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await authFetch(`/api/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
     itemEl.remove();
     if (id === sessionId) {
       startNewSession();
@@ -1547,8 +1696,9 @@ function escapeForAttr(str) {
 }
 
 async function loadSessions() {
+  if (!currentUser) return;
   try {
-    const res = await fetch('/api/sessions');
+    const res = await authFetch('/api/sessions');
     const data = await res.json();
     const sessions = data.sessions || [];
 
@@ -1597,9 +1747,9 @@ async function loadSessions() {
   }
 }
 
-// First paint: show a greeting + a fresh set of suggestions immediately.
+// Paint the greeting + suggestion chips immediately so the empty state isn't
+// blank while Firebase resolves the auth state.
 setEmptyState(true);
-loadSessions();
 </script>
 </body>
 </html>

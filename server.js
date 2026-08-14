@@ -22,7 +22,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 // Model can be overridden via env var. Good default: fast + capable.
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
-// ---------- Firebase Admin (Firestore) ----------
+// ---------- Firebase Admin (Firestore + Auth) ----------
 let db = null;
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -32,23 +32,52 @@ try {
       credential: admin.credential.cert(serviceAccount),
     });
     db = admin.firestore();
-    console.log('Firebase Admin initialized — chat history will be persisted to Firestore.');
+    console.log('Firebase Admin initialized — chat history will be persisted to Firestore and auth will be enforced.');
   } else {
-    console.warn('WARNING: FIREBASE_SERVICE_ACCOUNT is not set. Chat history will NOT be saved.');
+    console.warn('WARNING: FIREBASE_SERVICE_ACCOUNT is not set. Chat history will NOT be saved and auth cannot be verified.');
   }
 } catch (err) {
   console.error('Failed to initialize Firebase Admin:', err.message);
 }
 
+// ---------- Auth middleware ----------
+// Every route below (except /health) requires a valid Firebase ID token in
+// the Authorization header. The client (public/chatbot.html) attaches this
+// automatically via its authFetch() helper once someone is signed in.
+async function verifyAuth(req, res, next) {
+  if (!admin.apps.length) {
+    return res.status(503).json({ error: 'Server auth is not configured (FIREBASE_SERVICE_ACCOUNT missing).' });
+  }
+
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Missing or invalid Authorization header. Please sign in.' });
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.uid = decoded.uid;
+    next();
+  } catch (err) {
+    console.error('Token verification failed:', err.message);
+    res.status(401).json({ error: 'Invalid or expired session. Please sign in again.' });
+  }
+}
+
 // ---------- Helpers ----------
+// Chats are scoped per-user: users/{uid}/chats/{sessionId}/messages/*
+// so one signed-in user can never read or delete another user's chats,
+// even if they guess a sessionId.
 
 // Saves a message AND keeps the parent session doc's metadata (title, last
 // message, updatedAt) up to date so the sidebar can list sessions cheaply
 // without scanning every message subcollection.
-async function saveMessage(sessionId, role, content) {
+async function saveMessage(uid, sessionId, role, content) {
   if (!db) return;
   try {
-    const chatRef = db.collection('chats').doc(sessionId);
+    const chatRef = db.collection('users').doc(uid).collection('chats').doc(sessionId);
 
     await chatRef.collection('messages').add({
       role,
@@ -75,10 +104,12 @@ async function saveMessage(sessionId, role, content) {
   }
 }
 
-async function getHistory(sessionId, limit = 20) {
+async function getHistory(uid, sessionId, limit = 20) {
   if (!db) return [];
   try {
     const snapshot = await db
+      .collection('users')
+      .doc(uid)
       .collection('chats')
       .doc(sessionId)
       .collection('messages')
@@ -99,10 +130,12 @@ async function getHistory(sessionId, limit = 20) {
   }
 }
 
-async function listSessions(limit = 50) {
+async function listSessions(uid, limit = 50) {
   if (!db) return [];
   try {
     const snapshot = await db
+      .collection('users')
+      .doc(uid)
       .collection('chats')
       .orderBy('updatedAt', 'desc')
       .limit(limit)
@@ -124,21 +157,24 @@ async function listSessions(limit = 50) {
 
 // ---------- Routes ----------
 
-// Health check (useful for Render)
+// Health check (useful for Render) — intentionally public, no auth required.
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', firestore: !!db });
+  res.json({ status: 'ok', firestore: !!db, authConfigured: admin.apps.length > 0 });
 });
+
+// Everything below this line requires a signed-in user.
+app.use('/api', verifyAuth);
 
 // List past chat sessions for the sidebar
 app.get('/api/sessions', async (req, res) => {
-  const sessions = await listSessions(50);
+  const sessions = await listSessions(req.uid, 50);
   res.json({ sessions });
 });
 
 // Get chat history for a session
 app.get('/api/history/:sessionId', async (req, res) => {
   const { sessionId } = req.params;
-  const history = await getHistory(sessionId, 50);
+  const history = await getHistory(req.uid, sessionId, 50);
   res.json({ history });
 });
 
@@ -149,7 +185,7 @@ app.delete('/api/sessions/:sessionId', async (req, res) => {
   }
   try {
     const { sessionId } = req.params;
-    const chatRef = db.collection('chats').doc(sessionId);
+    const chatRef = db.collection('users').doc(req.uid).collection('chats').doc(sessionId);
     await db.recursiveDelete(chatRef);
     res.json({ deleted: true });
   } catch (err) {
@@ -169,7 +205,7 @@ app.post('/api/chat', async (req, res) => {
     const sid = sessionId || 'default-session';
 
     // Pull recent history for context (strip timestamp — the model doesn't need it)
-    const priorHistory = await getHistory(sid, 20);
+    const priorHistory = await getHistory(req.uid, sid, 20);
     const contextMessages = priorHistory.map((m) => ({ role: m.role, content: m.content }));
 
     const messages = [
@@ -182,7 +218,7 @@ app.post('/api/chat', async (req, res) => {
     ];
 
     // Save the user's message immediately
-    await saveMessage(sid, 'user', message);
+    await saveMessage(req.uid, sid, 'user', message);
 
     // Call Groq
     const completion = await groq.chat.completions.create({
@@ -195,7 +231,7 @@ app.post('/api/chat', async (req, res) => {
     const reply = completion.choices?.[0]?.message?.content?.trim() || '(no response)';
 
     // Save assistant reply
-    await saveMessage(sid, 'assistant', reply);
+    await saveMessage(req.uid, sid, 'assistant', reply);
 
     res.json({ reply, sessionId: sid });
   } catch (err) {
