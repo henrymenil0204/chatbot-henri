@@ -633,10 +633,352 @@ textarea#input::placeholder { color: var(--text-dim); }
 @media (min-width: 769px) {
   .sidebar-close-btn { display: none !important; }
 }
+
+/* ---------- Login page ---------- */
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(201, 138, 62, 0.08), transparent 30%),
+    radial-gradient(circle at 80% 80%, rgba(201, 138, 62, 0.05), transparent 30%),
+    var(--bg);
+  overflow-y: auto;
+}
+
+.auth-card {
+  width: min(430px, 100%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.auth-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: block;
+  margin: 0 auto 14px;
+}
+
+.auth-title {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 22px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+
+.auth-tab {
+  border: none;
+  border-radius: 7px;
+  padding: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: var(--bg-raised);
+  color: var(--text);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
+}
+
+.auth-field {
+  margin-bottom: 16px;
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-input::placeholder {
+  color: var(--text-dim);
+}
+
+.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201, 138, 62, 0.10);
+}
+
+.auth-password-row {
+  position: relative;
+}
+
+.auth-password-row .auth-input {
+  padding-right: 76px;
+}
+
+.auth-show-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.auth-show-password:hover {
+  color: var(--accent);
+}
+
+.auth-forgot {
+  display: block;
+  margin: -5px 0 18px;
+  text-align: right;
+  color: var(--accent);
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-primary {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.auth-primary:hover {
+  transform: translateY(-1px);
+}
+
+.auth-primary:active {
+  transform: translateY(0);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-google,
+.auth-guest {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 9px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-google {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.auth-google:hover,
+.auth-guest:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.auth-google-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 7px;
+  vertical-align: middle;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.auth-guest {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.auth-message {
+  min-height: 18px;
+  margin: 12px 0 0;
+  text-align: center;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.auth-note {
+  margin: 18px 0 0;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.auth-note code {
+  color: var(--accent);
+}
+
+.auth-screen.hidden {
+  display: none;
+}
+
+.shell.locked {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .auth-screen {
+    padding: 14px;
+  }
+
+  .auth-card {
+    padding: 24px 20px;
+    border-radius: 13px;
+  }
+
+  .auth-title {
+    font-size: 23px;
+  }
+}
+
 </style>
 </head>
 <body>
-  <div class="shell">
+
+  <!-- ---------- Login screen ---------- -->
+  <section class="auth-screen" id="authScreen" aria-label="Sign in">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="logo.svg" alt="Henri Chatbot logo" class="auth-logo" />
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to keep chatting with Henri.</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Authentication">
+        <button type="button" class="auth-tab active" id="signInTab">Sign in</button>
+        <button type="button" class="auth-tab" id="registerTab">Create account</button>
+      </div>
+
+      <form id="authForm">
+        <div class="auth-field">
+          <label class="auth-label" for="authEmail">Email address</label>
+          <input
+            class="auth-input"
+            id="authEmail"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="authPassword">Password</label>
+          <div class="auth-password-row">
+            <input
+              class="auth-input"
+              id="authPassword"
+              type="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              minlength="6"
+              required
+            />
+            <button type="button" class="auth-show-password" id="showPasswordBtn">SHOW</button>
+          </div>
+        </div>
+
+        <button type="button" class="auth-forgot" id="forgotPasswordBtn">Forgot password?</button>
+
+        <button type="submit" class="auth-primary" id="authSubmit">Sign in</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <button type="button" class="auth-google" id="googleBtn">
+        <span class="auth-google-icon">G</span>
+        Continue with Google
+      </button>
+
+      <button type="button" class="auth-guest" id="guestBtn">Continue as guest</button>
+
+      <p class="auth-message" id="authMessage" aria-live="polite"></p>
+      <p class="auth-note" id="authNote">
+        This login screen is connected to the page UI. For production authentication,
+        connect the form to your Firebase/Auth or backend login endpoint.
+      </p>
+    </div>
+  </section>
+
+  <div class="shell locked" id="appShell">
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <aside class="sidebar" id="sidebar">
@@ -666,6 +1008,7 @@ textarea#input::placeholder { color: var(--text-dim); }
         </div>
         <div class="header-spacer"></div>
         <button id="clearBtn" class="ghost-btn" title="Start a new session">new session</button>
+        <button id="logoutBtn" class="ghost-btn" title="Sign out">sign out</button>
       </header>
 
       <main id="log" class="log">
@@ -695,6 +1038,123 @@ textarea#input::placeholder { color: var(--text-dim); }
   </div>
 
   <script>
+
+// ---------- Login UI ----------
+const authScreen = document.getElementById('authScreen');
+const appShell = document.getElementById('appShell');
+const authForm = document.getElementById('authForm');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSubmit = document.getElementById('authSubmit');
+const authMessage = document.getElementById('authMessage');
+const authNote = document.getElementById('authNote');
+const signInTab = document.getElementById('signInTab');
+const registerTab = document.getElementById('registerTab');
+const showPasswordBtn = document.getElementById('showPasswordBtn');
+const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+const googleBtn = document.getElementById('googleBtn');
+const guestBtn = document.getElementById('guestBtn');
+
+let authMode = 'signin';
+
+function setAuthMessage(message, isError = true) {
+  authMessage.textContent = message;
+  authMessage.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const registering = mode === 'register';
+
+  signInTab.classList.toggle('active', !registering);
+  registerTab.classList.toggle('active', registering);
+  authSubmit.textContent = registering ? 'Create account' : 'Sign in';
+  authPassword.autocomplete = registering ? 'new-password' : 'current-password';
+  forgotPasswordBtn.style.display = registering ? 'none' : 'block';
+  authNote.innerHTML = registering
+    ? 'Create an account to continue. For production, connect this form to your real authentication service.'
+    : 'This login screen is connected to the page UI. For production authentication, connect the form to your Firebase/Auth or backend login endpoint.';
+  setAuthMessage('');
+}
+
+function showChatApp() {
+  authScreen.classList.add('hidden');
+  appShell.classList.remove('locked');
+  sessionStorage.setItem('henri_logged_in', 'true');
+}
+
+function showLogin() {
+  authScreen.classList.remove('hidden');
+  appShell.classList.add('locked');
+}
+
+signInTab.addEventListener('click', () => setAuthMode('signin'));
+registerTab.addEventListener('click', () => setAuthMode('register'));
+
+showPasswordBtn.addEventListener('click', () => {
+  const visible = authPassword.type === 'text';
+  authPassword.type = visible ? 'password' : 'text';
+  showPasswordBtn.textContent = visible ? 'SHOW' : 'HIDE';
+});
+
+forgotPasswordBtn.addEventListener('click', () => {
+  const email = authEmail.value.trim();
+  if (!email) {
+    setAuthMessage('Enter your email address first.');
+    authEmail.focus();
+    return;
+  }
+  setAuthMessage('Password reset requires a connected authentication service.', true);
+});
+
+googleBtn.addEventListener('click', () => {
+  setAuthMessage('Google sign-in requires Firebase/Auth or another OAuth provider to be connected.', true);
+});
+
+guestBtn.addEventListener('click', () => {
+  sessionStorage.setItem('henri_logged_in', 'guest');
+  showChatApp();
+});
+
+authForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+
+  if (!email || !password) {
+    setAuthMessage('Please enter your email and password.');
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthMessage('Password must be at least 6 characters.');
+    return;
+  }
+
+  // Front-end demo gate only. Replace this section with your real auth API.
+  if (authMode === 'register') {
+    localStorage.setItem('henri_demo_email', email);
+    setAuthMessage('Account created. Opening Henri Chatbot…', false);
+  } else {
+    const savedEmail = localStorage.getItem('henri_demo_email');
+    if (savedEmail && savedEmail !== email) {
+      setAuthMessage('This demo account uses a different email. Create a new account or use that email.');
+      return;
+    }
+    setAuthMessage('Signed in. Opening Henri Chatbot…', false);
+  }
+
+  setTimeout(showChatApp, 250);
+});
+
+if (sessionStorage.getItem('henri_logged_in')) {
+  showChatApp();
+} else {
+  showLogin();
+}
+
+
 const log = document.getElementById('log');
 const emptyState = document.getElementById('emptyState');
 const form = document.getElementById('chatForm');
@@ -1031,6 +1491,15 @@ function startNewSession() {
   highlightActiveSession();
   closeSidebar();
 }
+
+const logoutBtn = document.getElementById('logoutBtn');
+logoutBtn.addEventListener('click', () => {
+  sessionStorage.removeItem('henri_logged_in');
+  showLogin();
+  authPassword.value = '';
+  setAuthMessage('');
+});
+
 clearBtn.addEventListener('click', startNewSession);
 newChatBtn.addEventListener('click', startNewSession);
 
