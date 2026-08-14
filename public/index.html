@@ -207,6 +207,164 @@ html, body {
   line-height: 1.5;
 }
 
+/* ---------- Sidebar footer / account switcher ---------- */
+.sidebar-footer {
+  position: relative;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 10px;
+}
+
+.account-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.account-btn:hover { background: var(--user-bubble); }
+.account-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.account-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+}
+.account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.account-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-name {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-caret {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+}
+.account-btn[aria-expanded="true"] .account-caret { transform: rotate(180deg); }
+
+.account-menu {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% + 6px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+}
+.account-menu.open { display: flex; }
+
+.account-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.account-menu-item:hover { background: var(--user-bubble); color: var(--accent); }
+.account-menu-item.danger:hover { color: var(--danger); }
+
+.account-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 2px;
+}
+
+/* ---------- In-chat account switcher ---------- */
+.account-switcher-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.58);
+}
+.account-switcher-modal.open { display: flex; }
+.account-switcher-card {
+  width: min(420px, 100%);
+  max-height: min(680px, 90dvh);
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+  padding: 20px;
+}
+.account-switcher-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.account-switcher-title { margin:0; font-size:17px; font-weight:600; }
+.account-switcher-close { border:1px solid var(--border); background:transparent; color:var(--text-dim); border-radius:7px; width:30px; height:30px; cursor:pointer; }
+.account-switcher-close:hover { color:var(--accent); border-color:var(--accent); }
+.saved-accounts { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.saved-account { display:flex; align-items:center; gap:10px; width:100%; padding:9px; border:1px solid var(--border); border-radius:9px; background:transparent; color:var(--text); cursor:pointer; text-align:left; }
+.saved-account:hover { border-color:var(--accent); background:var(--user-bubble); }
+.saved-account.active { border-color:var(--accent); background:var(--accent-dim); }
+.saved-account-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--accent-dim); color:var(--accent); font-family:var(--mono); font-size:13px; }
+.saved-account-avatar img { width:100%; height:100%; object-fit:cover; }
+.saved-account-text { min-width:0; flex:1; }
+.saved-account-name, .saved-account-email { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.saved-account-name { font-size:13px; }
+.saved-account-email { font-size:11px; color:var(--text-dim); margin-top:2px; }
+.saved-account-check { color:var(--accent); font-size:13px; }
+.account-add-label { margin:16px 0 9px; color:var(--text-dim); font-size:11px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; }
+.account-login-field { margin-bottom:10px; }
+.account-login-field label { display:block; margin-bottom:5px; font-size:11px; color:var(--text-dim); }
+.account-login-input { width:100%; min-height:42px; padding:9px 11px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); outline:none; font:14px var(--sans); }
+.account-login-input:focus { border-color:var(--accent); }
+.account-login-actions { display:flex; gap:8px; margin-top:12px; }
+.account-login-actions button { flex:1; min-height:42px; border-radius:8px; cursor:pointer; font-family:var(--sans); }
+.account-add-btn { border:none; background:var(--accent); color:var(--accent-ink); font-weight:600; }
+.account-google-btn { border:1px solid var(--border); background:transparent; color:var(--text); }
+.account-google-btn:hover { border-color:var(--accent); color:var(--accent); }
+.account-switch-message { min-height:18px; margin:10px 0 0; font-size:12px; color:var(--danger); text-align:center; }
+
 /* ---------- Mobile-only controls (hidden on desktop) ---------- */
 .icon-btn {
   display: none;
@@ -1029,6 +1187,25 @@ textarea#input::placeholder { color: var(--text-dim); }
         <div class="session-skeleton"></div>
         <div class="session-skeleton"></div>
       </nav>
+
+      <div class="sidebar-footer">
+        <div class="account-menu" id="accountMenu">
+          <button type="button" class="account-menu-item" id="switchAccountBtn">Switch account</button>
+          <button type="button" class="account-menu-item" id="manageAccountBtn">Add another account</button>
+          <div class="account-menu-divider"></div>
+          <button type="button" class="account-menu-item danger" id="accountSignOutBtn">Sign out</button>
+        </div>
+        <button type="button" class="account-btn" id="accountBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="account-avatar" id="accountAvatar">?</span>
+          <span class="account-info">
+            <span class="account-name" id="accountName">Signed out</span>
+            <span class="account-sub" id="accountSub"></span>
+          </span>
+          <svg class="account-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 15L12 9L18 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </aside>
 
     <div class="app">
@@ -1069,6 +1246,32 @@ textarea#input::placeholder { color: var(--text-dim); }
     </div>
   </div>
 
+
+  <!-- ---------- In-chat account switcher ---------- -->
+  <div class="account-switcher-modal" id="accountSwitcherModal" role="dialog" aria-modal="true" aria-labelledby="accountSwitcherTitle">
+    <div class="account-switcher-card">
+      <div class="account-switcher-head">
+        <h2 class="account-switcher-title" id="accountSwitcherTitle">Switch account</h2>
+        <button type="button" class="account-switcher-close" id="accountSwitcherClose" aria-label="Close">✕</button>
+      </div>
+      <div class="saved-accounts" id="savedAccounts"></div>
+      <div class="account-add-label">Add another account</div>
+      <div class="account-login-field">
+        <label for="switchEmail">Email address</label>
+        <input class="account-login-input" id="switchEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="account-login-field">
+        <label for="switchPassword">Password</label>
+        <input class="account-login-input" id="switchPassword" type="password" placeholder="Password" autocomplete="current-password">
+      </div>
+      <div class="account-login-actions">
+        <button type="button" class="account-add-btn" id="addEmailAccountBtn">Add account</button>
+        <button type="button" class="account-google-btn" id="addGoogleAccountBtn">Continue with Google</button>
+      </div>
+      <p class="account-switch-message" id="accountSwitchMessage" aria-live="polite"></p>
+    </div>
+  </div>
+
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
@@ -1106,6 +1309,8 @@ let auth = null;
 if (isConfigured) {
   firebaseApp = initializeApp(firebaseConfig);
   auth = getAuth(firebaseApp);
+  activeAuth = auth;
+  accountAuths.set('primary', auth);
 } else {
   console.warn('Firebase config is still using placeholder values — auth is disabled until you fill in firebaseConfig.');
 }
@@ -1129,6 +1334,10 @@ const logoutBtn = document.getElementById('logoutBtn');
 
 let authMode = 'signin';
 let currentUser = null;
+// Set right before we deliberately sign out to let someone pick a
+// different account — lets the post-signout handler jump straight into
+// the right flow instead of just landing on a blank login screen.
+let pendingAccountAction = null; // null | 'switch'
 
 function setAuthMessage(message, isError = true) {
   authMessage.textContent = message;
@@ -1221,6 +1430,16 @@ function showLogin() {
   appShell.classList.add('locked');
   authPassword.value = '';
   setAuthBusy(false);
+  closeAccountMenu();
+
+  if (pendingAccountAction === 'switch') {
+    // They chose "switch account" — put them straight back on the sign-in
+    // tab (rather than whatever tab was last active) and say why they're
+    // seeing the login screen again.
+    setAuthMode('signin');
+    setAuthMessage('Signed out. Sign in with a different account to switch.', false);
+  }
+  pendingAccountAction = null;
 }
 
 function showVerifyScreen(user) {
@@ -1312,7 +1531,12 @@ googleBtn.addEventListener('click', async () => {
   }
   try {
     setAuthBusy(true);
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    // Always show Google's account chooser instead of silently reusing
+    // whichever Google session the browser remembers — this is what makes
+    // "switch account" actually work for Google sign-in.
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await signInWithPopup(auth, provider);
     // onAuthStateChanged below handles showing the chat app.
   } catch (err) {
     setAuthMessage(describeAuthError(err));
@@ -1375,25 +1599,35 @@ authForm.addEventListener('submit', async (e) => {
 logoutBtn.addEventListener('click', async () => {
   if (!auth) return;
   try {
-    await signOut(auth);
+    await signOut(activeAuth || auth);
   } catch (err) {
     console.error('Sign out failed:', err);
   }
 });
 
-if (auth) {
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    if (user && needsEmailVerification(user)) {
-      showVerifyScreen(user);
-    } else if (user) {
-      showChatApp();
-      startNewSession();
-      loadSessions();
-    } else {
-      showLogin();
-    }
+function handleActiveUser(user) {
+  currentUser = user;
+  renderAccount(user);
+  if (user && needsEmailVerification(user)) {
+    showVerifyScreen(user);
+  } else if (user) {
+    showChatApp();
+    startNewSession();
+    loadSessions();
+  } else {
+    showLogin();
+  }
+}
+
+function watchAccountAuth(accountKey, accountAuth) {
+  onAuthStateChanged(accountAuth, (user) => {
+    if (accountAuth === activeAuth) handleActiveUser(user);
+    renderSavedAccounts();
   });
+}
+
+if (auth) {
+  watchAccountAuth('primary', auth);
 } else {
   setAuthMessage('Firebase isn\u2019t configured yet — add your firebaseConfig values at the top of the script to enable sign-in.');
 }
@@ -1411,6 +1645,241 @@ async function authFetch(url, options = {}) {
   return fetch(url, Object.assign({}, options, { headers }));
 }
 
+// ---------- Who's signed in (sidebar footer) ----------
+const accountBtn = document.getElementById('accountBtn');
+const accountAvatar = document.getElementById('accountAvatar');
+const accountName = document.getElementById('accountName');
+const accountSub = document.getElementById('accountSub');
+const accountMenu = document.getElementById('accountMenu');
+const switchAccountBtn = document.getElementById('switchAccountBtn');
+const manageAccountBtn = document.getElementById('manageAccountBtn');
+const accountSignOutBtn = document.getElementById('accountSignOutBtn');
+
+function describeProvider(user) {
+  if (!user) return '';
+  if (user.isAnonymous) return 'Guest session';
+  const providerId = user.providerData[0] && user.providerData[0].providerId;
+  if (providerId === 'google.com') return 'Google account';
+  if (providerId === 'password') return 'Email & password';
+  return 'Signed in';
+}
+
+function initialsFor(user) {
+  const source = (user.displayName || user.email || '?').trim();
+  return source.charAt(0).toUpperCase();
+}
+
+function renderAccount(user) {
+  if (!user) {
+    accountName.textContent = 'Signed out';
+    accountSub.textContent = '';
+    accountAvatar.textContent = '?';
+    accountAvatar.style.backgroundImage = '';
+    accountAvatar.innerHTML = '?';
+    closeAccountMenu();
+    return;
+  }
+
+  if (user.isAnonymous) {
+    accountName.textContent = 'Guest';
+  } else {
+    accountName.textContent = user.displayName || user.email || 'Account';
+  }
+  accountSub.textContent = user.isAnonymous
+    ? describeProvider(user)
+    : (user.email || describeProvider(user));
+
+  if (user.photoURL) {
+    accountAvatar.innerHTML = `<img src="${user.photoURL}" alt="" referrerpolicy="no-referrer" />`;
+  } else {
+    accountAvatar.innerHTML = initialsFor(user);
+  }
+}
+
+function openAccountMenu() {
+  accountMenu.classList.add('open');
+  accountBtn.setAttribute('aria-expanded', 'true');
+}
+function closeAccountMenu() {
+  accountMenu.classList.remove('open');
+  accountBtn.setAttribute('aria-expanded', 'false');
+}
+function toggleAccountMenu() {
+  if (accountMenu.classList.contains('open')) closeAccountMenu();
+  else openAccountMenu();
+}
+
+document.addEventListener('click', (e) => {
+  if (!accountMenu.contains(e.target) && e.target !== accountBtn) {
+    closeAccountMenu();
+  }
+});
+
+// ---------- In-chat account switching ----------
+const accountSwitcherModal = document.getElementById('accountSwitcherModal');
+const accountSwitcherClose = document.getElementById('accountSwitcherClose');
+const savedAccounts = document.getElementById('savedAccounts');
+const switchEmail = document.getElementById('switchEmail');
+const switchPassword = document.getElementById('switchPassword');
+const addEmailAccountBtn = document.getElementById('addEmailAccountBtn');
+const addGoogleAccountBtn = document.getElementById('addGoogleAccountBtn');
+const accountSwitchMessage = document.getElementById('accountSwitchMessage');
+
+function setAccountSwitchMessage(message, isError = true) {
+  accountSwitchMessage.textContent = message;
+  accountSwitchMessage.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+}
+
+function accountKeyFor(user) {
+  if (!user) return '';
+  return user.email ? user.email.toLowerCase() : `uid:${user.uid}`;
+}
+
+function accountLabel(user) {
+  return user.isAnonymous ? 'Guest' : (user.displayName || user.email || 'Account');
+}
+
+function accountAvatarHtml(user) {
+  if (user.photoURL) return `<img src="${escapeForAttr(user.photoURL)}" alt="" referrerpolicy="no-referrer">`;
+  return initialsFor(user);
+}
+
+function renderSavedAccounts() {
+  savedAccounts.innerHTML = '';
+  for (const [key, accountAuth] of accountAuths) {
+    const user = accountAuth.currentUser;
+    if (!user) continue;
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'saved-account' + (accountAuth === activeAuth ? ' active' : '');
+    const avatar = document.createElement('span');
+    avatar.className = 'saved-account-avatar';
+    avatar.innerHTML = accountAvatarHtml(user);
+    const text = document.createElement('span');
+    text.className = 'saved-account-text';
+    const name = document.createElement('span');
+    name.className = 'saved-account-name';
+    name.textContent = accountLabel(user);
+    const email = document.createElement('span');
+    email.className = 'saved-account-email';
+    email.textContent = user.isAnonymous ? 'Guest session' : (user.email || describeProvider(user));
+    text.append(name, email);
+    item.append(avatar, text);
+    if (accountAuth === activeAuth) {
+      const check = document.createElement('span');
+      check.className = 'saved-account-check';
+      check.textContent = '✓';
+      item.appendChild(check);
+    }
+    item.addEventListener('click', () => switchToAccount(accountAuth));
+    savedAccounts.appendChild(item);
+  }
+}
+
+function openAccountSwitcher() {
+  closeAccountMenu();
+  setAccountSwitchMessage('');
+  switchEmail.value = '';
+  switchPassword.value = '';
+  renderSavedAccounts();
+  accountSwitcherModal.classList.add('open');
+  setTimeout(() => switchEmail.focus(), 0);
+}
+
+function closeAccountSwitcher() {
+  accountSwitcherModal.classList.remove('open');
+  switchPassword.value = '';
+}
+
+async function switchToAccount(targetAuth) {
+  if (!targetAuth || targetAuth === activeAuth) {
+    closeAccountSwitcher();
+    return;
+  }
+  const user = targetAuth.currentUser;
+  if (!user) return;
+  activeAuth = targetAuth;
+  currentUser = user;
+  closeAccountSwitcher();
+  handleActiveUser(user);
+}
+
+async function addEmailAccount() {
+  if (!auth) return;
+  const email = switchEmail.value.trim();
+  const password = switchPassword.value;
+  if (!email || !password) { setAccountSwitchMessage('Enter the email and password first.'); return; }
+  addEmailAccountBtn.disabled = true;
+  setAccountSwitchMessage('Signing in…', false);
+  try {
+    const app = initializeApp(firebaseConfig, `account-${++accountCounter}-${Date.now()}`);
+    const accountAuth = getAuth(app);
+    const cred = await signInWithEmailAndPassword(accountAuth, email, password);
+    const key = accountKeyFor(cred.user);
+    accountAuths.set(key, accountAuth);
+    activeAuth = accountAuth;
+    watchAccountAuth(key, accountAuth);
+    handleActiveUser(cred.user);
+    closeAccountSwitcher();
+  } catch (err) {
+    setAccountSwitchMessage(describeAuthError(err));
+  } finally {
+    addEmailAccountBtn.disabled = false;
+  }
+}
+
+async function addGoogleAccount() {
+  if (!auth) return;
+  addGoogleAccountBtn.disabled = true;
+  setAccountSwitchMessage('Opening Google account chooser…', false);
+  try {
+    const app = initializeApp(firebaseConfig, `account-google-${++accountCounter}-${Date.now()}`);
+    const accountAuth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const cred = await signInWithPopup(accountAuth, provider);
+    const key = accountKeyFor(cred.user);
+    accountAuths.set(key, accountAuth);
+    activeAuth = accountAuth;
+    watchAccountAuth(key, accountAuth);
+    handleActiveUser(cred.user);
+    closeAccountSwitcher();
+  } catch (err) {
+    setAccountSwitchMessage(describeAuthError(err));
+  } finally {
+    addGoogleAccountBtn.disabled = false;
+  }
+}
+
+accountBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleAccountMenu();
+});
+
+// The two account actions now stay on the conversation page.
+switchAccountBtn.addEventListener('click', openAccountSwitcher);
+manageAccountBtn.addEventListener('click', openAccountSwitcher);
+accountSwitcherClose.addEventListener('click', closeAccountSwitcher);
+accountSwitcherModal.addEventListener('click', (e) => {
+  if (e.target === accountSwitcherModal) closeAccountSwitcher();
+});
+addEmailAccountBtn.addEventListener('click', addEmailAccount);
+addGoogleAccountBtn.addEventListener('click', addGoogleAccount);
+switchPassword.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addEmailAccount();
+});
+
+accountSignOutBtn.addEventListener('click', async () => {
+  if (!activeAuth) return;
+  closeAccountMenu();
+  try {
+    await signOut(activeAuth);
+    activeAuth = null;
+    currentUser = null;
+  } catch (err) {
+    console.error('Sign out failed:', err);
+  }
+});
 
 const log = document.getElementById('log');
 const emptyState = document.getElementById('emptyState');
