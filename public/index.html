@@ -8,21 +8,23 @@
 <link rel="icon" type="image/svg+xml" href="logo.svg" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
-<meta name="theme-color" content="#ff8a3d" />
+<meta name="theme-color" content="#c98a3e" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <style>
 :root {
-  --bg: #0e1210;
-  --bg-raised: #151a17;
-  --border: #262d29;
-  --text: #e9ede9;
-  --text-dim: #8a938c;
-  --accent: #ff8a3d;
-  --accent-dim: #3a2a1c;
-  --user-bubble: #1c2320;
+  /* Warm espresso-and-brass palette — a concierge desk at closing time, not a terminal. */
+  --bg: #1b1512;
+  --bg-raised: #241d18;
+  --border: #3a2f27;
+  --text: #f4ede2;
+  --text-dim: #a89887;
+  --accent: #c98a3e;
+  --accent-ink: #241407;
+  --accent-dim: #3a2a16;
+  --user-bubble: #2a221b;
   --bot-bubble: transparent;
-  --danger: #ff6b6b;
+  --danger: #e2665a;
   --radius: 10px;
   --sidebar-w: 264px;
   --mono: "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
@@ -182,13 +184,13 @@ html, body {
 }
 .session-item:hover .session-delete-btn,
 .session-delete-btn:focus-visible { opacity: 1; }
-.session-delete-btn:hover { background: rgba(255, 107, 107, 0.15); color: var(--danger); }
+.session-delete-btn:hover { background: rgba(226, 102, 90, 0.15); color: var(--danger); }
 
 .session-skeleton {
   height: 40px;
   margin: 3px 4px;
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--user-bubble) 0%, #22292500 50%, var(--user-bubble) 100%);
+  background: linear-gradient(90deg, var(--user-bubble) 0%, #2a221b00 50%, var(--user-bubble) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
@@ -286,6 +288,20 @@ html, body {
   max-width: 480px;
 }
 
+.greeting-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0 0 6px;
+  letter-spacing: 0.01em;
+}
+
+.greeting-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
 .msg {
   display: flex;
   flex-direction: column;
@@ -335,7 +351,7 @@ html, body {
 .bubble a { color: var(--accent); }
 .bubble strong { color: #fff; }
 .bubble code {
-  background: rgba(255, 138, 61, 0.12);
+  background: rgba(201, 138, 62, 0.15);
   color: var(--accent);
   padding: 2px 5px;
   border-radius: 4px;
@@ -445,7 +461,7 @@ html, body {
   font-size: 11px;
   cursor: pointer;
 }
-.retry-btn:hover { background: rgba(255, 107, 107, 0.1); }
+.retry-btn:hover { background: rgba(226, 102, 90, 0.1); }
 
 .scroll-bottom-btn {
   position: absolute;
@@ -549,7 +565,7 @@ textarea#input::placeholder { color: var(--text-dim); }
   border-radius: 50%;
   border: none;
   background: var(--accent);
-  color: #1a1200;
+  color: var(--accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -610,7 +626,8 @@ textarea#input::placeholder { color: var(--text-dim); }
   .log { padding: 12px 10px 6px; gap: 16px; }
   .composer { padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px)); }
   .suggestion-bar { padding: 0 10px 8px; }
-  .empty-state { font-size: 13px; }
+  .greeting-title { font-size: 16px; }
+  .greeting-sub { font-size: 12.5px; }
 }
 
 @media (min-width: 769px) {
@@ -652,20 +669,13 @@ textarea#input::placeholder { color: var(--text-dim); }
       </header>
 
       <main id="log" class="log">
-        <div class="empty-state" id="emptyState">
-          <p>Say something to start the conversation.</p>
-        </div>
+        <div class="empty-state" id="emptyState"></div>
       </main>
 
       <button id="scrollBottomBtn" class="scroll-bottom-btn" aria-label="Scroll to latest message">↓</button>
 
       <div class="suggestion-bar-wrap" id="suggestionBarWrap">
-        <div class="suggestion-bar" id="suggestionBar">
-          <button class="suggestion-chip" data-prompt="Explain how async/await works in JavaScript">Explain async/await in JS</button>
-          <button class="suggestion-chip" data-prompt="Give me 5 ideas for a birthday gift for a coffee lover">Birthday gift ideas</button>
-          <button class="suggestion-chip" data-prompt="Write a short, friendly email asking to reschedule a meeting">Draft a reschedule email</button>
-          <button class="suggestion-chip" data-prompt="What's the difference between TCP and UDP?">TCP vs UDP</button>
-        </div>
+        <div class="suggestion-bar" id="suggestionBar"></div>
       </div>
 
       <form id="chatForm" class="composer">
@@ -710,14 +720,80 @@ if (hasMarkdown) {
   marked.setOptions({ breaks: true, gfm: true });
 }
 
+// ---------- Greetings & rotating suggestions ----------
+// A fresh greeting + a fresh set of prompt chips every time someone lands on
+// an empty conversation (first load, "new chat", or opening an already-empty
+// session).
+const GREETINGS = [
+  "Bonsoir — I'm Henri. What can I help you with?",
+  "Hi there, I'm Henri. What's on your mind today?",
+  "Welcome back. I'm Henri — ready when you are.",
+  "Hello! Henri here. Ask me anything.",
+  "Good to see you. I'm Henri — where should we start?",
+  "Evening. I'm Henri, your assistant. How can I help?",
+];
+
+const SUGGESTIONS = [
+  { label: 'Explain async/await in JS', prompt: 'Explain how async/await works in JavaScript' },
+  { label: 'Birthday gift ideas', prompt: 'Give me 5 ideas for a birthday gift for a coffee lover' },
+  { label: 'Draft a reschedule email', prompt: 'Write a short, friendly email asking to reschedule a meeting' },
+  { label: 'TCP vs UDP', prompt: "What's the difference between TCP and UDP?" },
+  { label: 'Summarize an article', prompt: 'Summarize the key points of a long article in 5 bullet points' },
+  { label: 'Plan a weekend trip', prompt: 'Help me plan a relaxing weekend trip on a $300 budget' },
+  { label: 'Debug my code', prompt: 'Help me figure out why my Python function keeps returning None' },
+  { label: 'Explain it simply', prompt: "Explain how blockchain works like I'm 12" },
+  { label: 'Write a short poem', prompt: 'Write a short poem about the first rain of the season' },
+  { label: 'Sharpen a resume line', prompt: "Rewrite this resume bullet to sound more impactful: 'Helped with sales team tasks'" },
+];
+
+function pickRandom(arr, n) {
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+function renderSuggestions() {
+  suggestionBar.innerHTML = '';
+  pickRandom(SUGGESTIONS, 4).forEach((s) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'suggestion-chip';
+    chip.textContent = s.label;
+    chip.addEventListener('click', () => {
+      input.value = s.prompt;
+      autoGrow();
+      input.focus();
+    });
+    suggestionBar.appendChild(chip);
+  });
+}
+
+function renderGreeting() {
+  const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+  const title = document.createElement('p');
+  title.className = 'greeting-title';
+  title.textContent = greeting;
+  const sub = document.createElement('p');
+  sub.className = 'greeting-sub';
+  sub.textContent = 'Ask me anything to get started.';
+  emptyState.replaceChildren(title, sub);
+}
+
 // ---------- Empty state / suggestion bar ----------
-// Keeps the "start a conversation" message and the suggestion chips above
-// the composer in sync: both show together before the first message, and
-// both hide once a conversation is underway.
+// Keeps the greeting and the suggestion chips above the composer in sync:
+// both refresh and show together before the first message of a conversation,
+// and both hide once messages exist.
 function setEmptyState(isEmpty) {
   emptyState.style.display = isEmpty ? 'block' : 'none';
   suggestionBar.classList.toggle('hide', !isEmpty);
   suggestionBarWrap.classList.toggle('hide', !isEmpty);
+  if (isEmpty) {
+    renderGreeting();
+    renderSuggestions();
+  }
 }
 
 // ---------- Sidebar open/close (mobile) ----------
@@ -745,14 +821,6 @@ input.addEventListener('keydown', (e) => {
     e.preventDefault();
     form.requestSubmit();
   }
-});
-
-document.querySelectorAll('.suggestion-chip').forEach((chip) => {
-  chip.addEventListener('click', () => {
-    input.value = chip.dataset.prompt;
-    autoGrow();
-    input.focus();
-  });
 });
 
 // ---------- Rendering helpers ----------
@@ -1060,6 +1128,8 @@ async function loadSessions() {
   }
 }
 
+// First paint: show a greeting + a fresh set of suggestions immediately.
+setEmptyState(true);
 loadSessions();
 </script>
 </body>
