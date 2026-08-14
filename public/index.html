@@ -1306,6 +1306,9 @@ const isConfigured = !Object.values(firebaseConfig).some((v) => String(v).starts
 
 let firebaseApp = null;
 let auth = null;
+let activeAuth = null;
+const accountAuths = new Map();
+let accountCounter = 0;
 if (isConfigured) {
   firebaseApp = initializeApp(firebaseConfig);
   auth = getAuth(firebaseApp);
