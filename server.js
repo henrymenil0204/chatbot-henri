@@ -21,7 +21,7 @@ if (!process.env.GROQ_API_KEY) {
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // Model can be overridden via env var. Good default: fast + capable.
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 // ---------- Firebase Admin (Firestore + Auth) ----------
 let db = null;
